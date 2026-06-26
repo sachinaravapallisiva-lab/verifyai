@@ -3,6 +3,25 @@ import { useState } from 'react';
 
 export default function RepDashboard() {
   const [phone, setPhone] = useState('');
+  const [status, setStatus] = useState('idle');
+  const [sessionId, setSessionId] = useState('');
+
+  const sendOTP = async () => {
+    if (!phone) return;
+    setStatus('sending');
+    const res = await fetch('/api/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+    const data = await res.json();
+    if (data.success) {
+      setSessionId(data.sessionId);
+      setStatus('waiting');
+    } else {
+      setStatus('error');
+    }
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: '#0D1B2A', padding: '40px' }}>
@@ -13,14 +32,20 @@ export default function RepDashboard() {
         placeholder="+1 (555) 000-0000"
         value={phone}
         onChange={(e) => setPhone(e.target.value)}
-        style={{ padding: '12px', width: '300px', borderRadius: '8px', border: 'none', marginTop: '16px' }}
+        style={{ padding: '12px', width: '300px', borderRadius: '8px', border: '1px solid #334155', background: '#1E2D3D', color: 'white', marginTop: '16px', display: 'block' }}
       />
-      <br />
       <button
-        style={{ marginTop: '16px', padding: '12px 24px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+        onClick={sendOTP}
+        style={{ marginTop: '16px', padding: '12px 24px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '16px' }}
       >
-        Send Verification
+        {status === 'sending' ? 'Sending...' : 'Send Verification'}
       </button>
+      {status === 'waiting' && (
+        <p style={{ color: '#22C55E', marginTop: '16px' }}>OTP sent! Waiting for customer to verify...</p>
+      )}
+      {status === 'error' && (
+        <p style={{ color: '#EF4444', marginTop: '16px' }}>Error sending OTP. Check Twilio config.</p>
+      )}
     </div>
   );
 }
