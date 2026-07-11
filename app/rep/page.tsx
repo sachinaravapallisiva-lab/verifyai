@@ -40,6 +40,15 @@ export default function RepDashboard() {
       >
         {status === 'sending' ? 'Sending...' : 'Send Verification'}
       </button>
+      <p style={{ color: '#94A3B8', fontSize: '12px', maxWidth: '400px', marginTop: '16px' }}>
+  Tap <strong>Send Verification</strong> only after the customer has verbally
+  agreed to receive a one-time verification text from <strong>VerifyAI</strong> to
+  confirm their identity. Msg &amp; data rates may apply. The customer may reply
+  STOP to opt out or HELP for help. See our{' '}
+  <a href="/privacy" style={{ color: '#94A3B8', textDecoration: 'underline' }}>Privacy Policy</a>{' '}
+  and{' '}
+  <a href="/terms" style={{ color: '#94A3B8', textDecoration: 'underline' }}>Terms</a>.
+</p>
       {status === 'waiting' && (
         <p style={{ color: '#22C55E', marginTop: '16px' }}>OTP sent! Waiting for customer to verify...</p>
       )}
