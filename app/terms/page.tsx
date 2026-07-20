@@ -21,7 +21,7 @@ export default function TermsPage() {
         <p>These terms are governed by the laws of the State of Indiana.</p>
 
         <h2 style={{ fontWeight: '600', margin: '24px 0 8px' }}>Contact Us</h2>
-        <p>Questions can be sent to <a href="mailto:sachin.aravapalli.siva@gmail.com" style={{ color: '#2563EB' }}>sachin.aravapalli.siva@gmail.com</a>.</p>
+        <p>Questions can be sent to <a href="mailto:contact@verifyai.llc" style={{ color: '#2563EB' }}>contact@verifyai.llc</a>.</p>
       </div>
     </main>
   );
