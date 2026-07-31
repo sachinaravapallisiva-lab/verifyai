@@ -1,8 +1,16 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 export default function VerifyPage() {
+  return (
+    <Suspense fallback={null}>
+      <VerifyForm />
+    </Suspense>
+  );
+}
+
+function VerifyForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   const [otp, setOtp] = useState('');
@@ -23,7 +31,7 @@ export default function VerifyPage() {
       } else {
         setStatus('error');
       }
-    } catch (e) {
+    } catch {
       setStatus('error');
     }
   };
