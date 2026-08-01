@@ -1,93 +1,69 @@
 'use client';
-import { Suspense, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+
+import { useState } from 'react';
 
 export default function VerifyPage() {
-  return (
-    <Suspense fallback={null}>
-      <VerifyForm />
-    </Suspense>
-  );
-}
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-function VerifyForm() {
-  const searchParams = useSearchParams();
-  const token = searchParams.get('token');
-  const [otp, setOtp] = useState('');
-  const [status, setStatus] = useState('idle');
-
-  const verify = async () => {
-    if (!otp || otp.length !== 6) return;
-    setStatus('verifying');
+  async function handleVerify() {
+    setStatus('loading');
     try {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      const otp = params.get('otp');
+
       const res = await fetch('/api/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, otp }),
       });
       const data = await res.json();
-      if (data.success) {
-        setStatus('success');
-      } else {
-        setStatus('error');
-      }
+      setStatus(data.success ? 'success' : 'error');
     } catch {
       setStatus('error');
     }
-  };
+  }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0D1B2A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Arial, sans-serif' }}>
-      <div style={{ background: '#1E2D3D', borderRadius: '16px', padding: '40px', width: '100%', maxWidth: '400px', textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔒</div>
-        <h1 style={{ color: 'white', fontSize: '24px', marginBottom: '8px' }}>VerifyAI</h1>
-        <p style={{ color: '#94A3B8', marginBottom: '32px', fontSize: '14px' }}>Enter your 6-digit verification code</p>
+    <main style={{ minHeight: '100vh', background: '#0B1220', color: '#E5EAF3', fontFamily: 'system-ui, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+      <div style={{ maxWidth: '400px', width: '100%', textAlign: 'center' }}>
+        <p style={{ fontSize: '14px', fontWeight: 600, color: '#4F7DF3', letterSpacing: '1px' }}>VERIFYAI</p>
+        <h1 style={{ fontSize: '26px', fontWeight: 'bold', marginTop: '16px' }}>Verify Your Identity</h1>
 
         {status === 'idle' && (
           <>
-            <input
-              type="number"
-              placeholder="000000"
-              value={otp}
-              onChange={(e) => setOtp(e.target.value.slice(0, 6))}
-              style={{ width: '100%', padding: '16px', fontSize: '24px', textAlign: 'center', borderRadius: '8px', border: '1px solid #334155', background: '#0D1B2A', color: 'white', marginBottom: '16px', boxSizing: 'border-box', letterSpacing: '8px' }}
-            />
-            <button
-              onClick={verify}
-              style={{ width: '100%', padding: '14px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', cursor: 'pointer', fontWeight: 'bold' }}
-            >
-              Verify Identity
+            <p style={{ color: '#9AA6BC', marginTop: '16px', lineHeight: 1.6 }}>
+              A representative needs to confirm it&apos;s you to continue your call. Tap below to securely confirm your identity.
+            </p>
+            <button onClick={handleVerify} style={{ marginTop: '28px', width: '100%', padding: '14px', background: '#4F7DF3', color: 'white', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>
+              Confirm My Identity
             </button>
           </>
         )}
 
-        {status === 'verifying' && (
-          <p style={{ color: '#94A3B8', fontSize: '16px' }}>Verifying...</p>
+        {status === 'loading' && (
+          <p style={{ color: '#9AA6BC', marginTop: '28px' }}>Verifying…</p>
         )}
 
         {status === 'success' && (
-          <>
-            <div style={{ fontSize: '64px', marginBottom: '16px' }}>✅</div>
-            <h2 style={{ color: '#22C55E', fontSize: '22px', marginBottom: '8px' }}>Identity Verified!</h2>
-            <p style={{ color: '#94A3B8', fontSize: '14px' }}>You can now close this window. Your support rep has been notified.</p>
-          </>
+          <div style={{ marginTop: '28px' }}>
+            <div style={{ fontSize: '48px' }}>✓</div>
+            <h2 style={{ fontSize: '20px', fontWeight: 600, marginTop: '12px' }}>Identity Confirmed</h2>
+            <p style={{ color: '#9AA6BC', marginTop: '12px', lineHeight: 1.6 }}>
+              You&apos;re verified. You can return to your call — the representative has been notified.
+            </p>
+          </div>
         )}
 
         {status === 'error' && (
-          <>
-            <div style={{ fontSize: '64px', marginBottom: '16px' }}>❌</div>
-            <p style={{ color: '#EF4444', marginBottom: '16px' }}>Invalid code. Please try again.</p>
-            <button
-              onClick={() => setStatus('idle')}
-              style={{ padding: '12px 24px', background: '#3B82F6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-            >
-              Try Again
-            </button>
-          </>
+          <div style={{ marginTop: '28px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 600, color: '#F87171' }}>Verification Failed</h2>
+            <p style={{ color: '#9AA6BC', marginTop: '12px', lineHeight: 1.6 }}>
+              This link may have expired. Please ask the representative to send a new verification link.
+            </p>
+          </div>
         )}
-
-        <p style={{ color: '#475569', fontSize: '12px', marginTop: '24px' }}>Secured by VerifyAI</p>
       </div>
-    </div>
+    </main>
   );
 }

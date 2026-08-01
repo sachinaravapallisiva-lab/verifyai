@@ -35,10 +35,15 @@ export async function POST(req: NextRequest) {
 
     if (error || !session) throw error ?? new Error('Failed to create session');
 
-    const verifyUrl = process.env.NEXT_PUBLIC_APP_URL + '/verify?token=' + session.id;
+    const verifyUrl =
+      process.env.NEXT_PUBLIC_APP_URL + '/verify?token=' + session.id + '&otp=' + otp;
 
     await twilioClient.messages.create({
-      body: 'VerifyAI: Your verification code is ' + otp + '. Verify here: ' + verifyUrl,
+      body:
+        'VerifyAI: A representative needs to confirm your identity to continue your call. ' +
+        'Tap to verify securely: ' +
+        verifyUrl +
+        '. Msg & data rates may apply. Reply STOP to opt out or HELP for help.',
       from: process.env.TWILIO_PHONE_NUMBER,
       to: phone,
     });
