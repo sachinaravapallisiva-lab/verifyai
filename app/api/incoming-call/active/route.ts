@@ -10,7 +10,7 @@ export async function GET() {
 
   const { data, error } = await supabaseAdmin
     .from('verify_sessions')
-    .select('id, customer_phone, customer_id, status, rep_id, created_at, expires_at, customers(name, email)')
+    .select('id, customer_phone, customer_id, status, verification_method, rep_id, created_at, expires_at, customers(name, email)')
     .gte('created_at', since)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -21,7 +21,7 @@ export async function GET() {
   }
 
   let status = data.status;
-  if (status === 'pending' && new Date(data.expires_at) < new Date()) {
+  if ((status === 'pending' || status === 'awaiting_2fa') && new Date(data.expires_at) < new Date()) {
     status = 'expired';
     await supabaseAdmin.from('verify_sessions').update({ status: 'expired' }).eq('id', data.id);
   }
@@ -35,6 +35,7 @@ export async function GET() {
       phone: data.customer_phone,
       customerId: data.customer_id,
       status,
+      verificationMethod: data.verification_method,
       customerName: customer?.name ?? null,
       customerEmail: customer?.email ?? null,
       repId: data.rep_id,

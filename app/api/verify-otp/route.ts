@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { buildAuthenticationOptions, buildRegistrationOptions } from '@/lib/webauthn';
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,7 +11,7 @@ export async function POST(req: NextRequest) {
 
     const { data: session } = await supabaseAdmin
       .from('verify_sessions')
-      .select('id, otp, status, expires_at')
+      .select('id, otp, status, expires_at, customer_id')
       .eq('id', token)
       .maybeSingle();
 
@@ -27,9 +28,61 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Incorrect code' }, { status: 401 });
     }
 
-    await supabaseAdmin.from('verify_sessions').update({ status: 'verified' }).eq('id', token);
+    // No customer on file for this session (e.g. unrecognized caller) — no
+    // account to attach a passkey/PIN to, so this is tap-only by definition.
+    if (!session.customer_id) {
+      await supabaseAdmin
+        .from('verify_sessions')
+        .update({ status: 'verified', verification_method: 'tap' })
+        .eq('id', token);
+      return NextResponse.json({ success: true, requiresStep: null });
+    }
 
-    return NextResponse.json({ success: true });
+    const { data: customer } = await supabaseAdmin
+      .from('customers')
+      .select('id, email, phone, pin_hash')
+      .eq('id', session.customer_id)
+      .maybeSingle();
+
+    if (!customer) {
+      return NextResponse.json({ success: false, error: 'Customer record not found' }, { status: 404 });
+    }
+
+    const { data: passkeys } = await supabaseAdmin
+      .from('passkeys')
+      .select('credential_id, transports')
+      .eq('customer_id', session.customer_id);
+
+    const hasPin = !!customer?.pin_hash;
+
+    if (passkeys && passkeys.length > 0) {
+      const authOptions = await buildAuthenticationOptions(
+        passkeys.map((p) => ({ id: p.credential_id, transports: p.transports ?? undefined }))
+      );
+      await supabaseAdmin
+        .from('verify_sessions')
+        .update({
+          status: 'awaiting_2fa',
+          webauthn_challenge: authOptions.challenge,
+          webauthn_challenge_expires_at: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
+        })
+        .eq('id', token);
+      return NextResponse.json({ success: true, requiresStep: 'assertion', authOptions, hasPin });
+    }
+
+    const registrationOptions = await buildRegistrationOptions(
+      { id: customer.id, email: customer.email, phone: customer.phone },
+      []
+    );
+    await supabaseAdmin
+      .from('verify_sessions')
+      .update({
+        status: 'awaiting_2fa',
+        webauthn_challenge: registrationOptions.challenge,
+        webauthn_challenge_expires_at: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
+      })
+      .eq('id', token);
+    return NextResponse.json({ success: true, requiresStep: 'register_or_pin', registrationOptions, hasPin });
   } catch (error) {
     console.error('Verify OTP error:', error);
     return NextResponse.json({ success: false }, { status: 500 });
@@ -44,7 +97,7 @@ export async function GET(req: NextRequest) {
 
   const { data: session } = await supabaseAdmin
     .from('verify_sessions')
-    .select('id, status, customer_id, customers(name, email, phone)')
+    .select('id, status, verification_method, customer_id, customers(name, email, phone)')
     .eq('id', token)
     .maybeSingle();
 
@@ -55,6 +108,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     verified: session.status === 'verified',
     status: session.status,
+    verificationMethod: session.verification_method,
     customer: session.customers ?? null,
   });
 }

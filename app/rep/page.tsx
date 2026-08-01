@@ -6,19 +6,34 @@ type CallSession = {
   phone: string;
   customerId: string | null;
   status: string;
+  verificationMethod: string | null;
   customerName: string | null;
   customerEmail: string | null;
   repId: string | null;
   createdAt: string;
 };
 
-const STATUS_BADGE: Record<string, { label: string; color: string; note: string }> = {
-  verified: { label: 'Verified (link)', color: '#22C55E', note: 'Strongest evidence — customer confirmed via SMS link' },
-  manual_review: { label: 'Manually verified', color: '#F59E0B', note: 'Rep confirmed identity manually' },
-  auto_verified: { label: 'Auto-verified (Caller ID)', color: '#818CF8', note: 'Caller ID match only — spoofable, weakest evidence. Sensitive actions still need OTP.' },
-  pending: { label: 'Pending', color: '#94A3B8', note: 'Awaiting verification' },
-  expired: { label: 'Expired', color: '#EF4444', note: 'Session expired before verification' },
+type Badge = { label: string; color: string; note: string; rank: number };
+
+// Ranked strongest (1) to weakest evidence. `verified` sessions are split by
+// verificationMethod since biometric/PIN/tap-only carry different guarantees.
+const BADGE_TIERS: Record<string, Badge> = {
+  'verified:biometric': { label: 'Verified (biometric)', color: '#22C55E', note: 'Strongest evidence — customer confirmed with Face ID / Touch ID', rank: 1 },
+  'verified:pin': { label: 'Verified (PIN)', color: '#34D399', note: 'Customer confirmed with their PIN', rank: 2 },
+  'verified:tap': { label: 'Verified (link tap)', color: '#4ADE80', note: 'Customer tapped the SMS link only — no biometric or PIN on file for this customer', rank: 3 },
+  'manual_review:': { label: 'Manually verified', color: '#F59E0B', note: 'Rep confirmed identity manually', rank: 4 },
+  'auto_verified:': { label: 'Auto-verified (Caller ID)', color: '#818CF8', note: 'Caller ID match only — spoofable, weakest evidence. Sensitive actions still need OTP.', rank: 5 },
+  'awaiting_2fa:': { label: 'Completing verification…', color: '#38BDF8', note: 'Customer tapped the link and is confirming with biometric or PIN', rank: 6 },
+  'pending:': { label: 'Pending', color: '#94A3B8', note: 'Awaiting verification', rank: 7 },
+  'expired:': { label: 'Expired', color: '#EF4444', note: 'Session expired before verification', rank: 8 },
 };
+
+function badgeFor(status: string, verificationMethod: string | null): Badge {
+  if (status === 'verified') {
+    return BADGE_TIERS[`verified:${verificationMethod ?? 'tap'}`] ?? BADGE_TIERS['verified:tap'];
+  }
+  return BADGE_TIERS[`${status}:`] ?? BADGE_TIERS['pending:'];
+}
 
 export default function RepDashboard() {
   const [repId, setRepId] = useState(() =>
@@ -97,7 +112,7 @@ export default function RepDashboard() {
     }
   };
 
-  const badge = call ? STATUS_BADGE[call.status] ?? STATUS_BADGE.pending : null;
+  const badge = call ? badgeFor(call.status, call.verificationMethod) : null;
 
   return (
     <div style={{ minHeight: '100vh', background: '#0D1B2A', padding: '40px' }}>

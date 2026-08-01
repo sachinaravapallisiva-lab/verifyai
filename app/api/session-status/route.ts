@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
 
   const { data: session } = await supabaseAdmin
     .from('verify_sessions')
-    .select('id, status, customer_id, customers(name, email, phone)')
+    .select('id, status, verification_method, customer_id, customers(name, email, phone)')
     .eq('id', sessionId)
     .maybeSingle();
 
@@ -20,6 +20,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     verified: session.status === 'verified',
     status: session.status,
+    verificationMethod: session.verification_method,
     customer: session.customers ?? null,
   });
 }
