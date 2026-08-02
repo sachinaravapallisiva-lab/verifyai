@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { publicKeyFromBase64, verifyAssertion } from '@/lib/webauthn';
+import { normalizeTransports, publicKeyFromBase64, verifyAssertion } from '@/lib/webauthn';
 import type { AuthenticationResponseJSON } from '@simplewebauthn/server';
 
 export async function POST(req: NextRequest) {
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
       id: passkey.credential_id,
       publicKey: publicKeyFromBase64(passkey.public_key),
       counter: passkey.counter,
-      transports: passkey.transports ?? undefined,
+      transports: normalizeTransports(passkey.transports),
     });
 
     if (!verified) {

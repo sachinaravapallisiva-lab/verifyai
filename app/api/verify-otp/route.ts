@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
-import { buildAuthenticationOptions, buildRegistrationOptions } from '@/lib/webauthn';
+import { buildAuthenticationOptions, buildRegistrationOptions, normalizeTransports } from '@/lib/webauthn';
 
 // The default WebAuthn ceremony timeout is 60s, but a first-time platform
 // authenticator prompt can add an OS-level permission dialog on top of that.
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
     if (passkeys && passkeys.length > 0) {
       const authOptions = await buildAuthenticationOptions(
-        passkeys.map((p) => ({ id: p.credential_id, transports: p.transports ?? undefined }))
+        passkeys.map((p) => ({ id: p.credential_id, transports: normalizeTransports(p.transports) }))
       );
       await supabaseAdmin
         .from('verify_sessions')

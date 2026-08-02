@@ -86,3 +86,22 @@ export function publicKeyFromBase64(encoded: string) {
   // is typed as ArrayBufferLike, which TS won't narrow automatically).
   return new Uint8Array(Buffer.from(encoded, 'base64')).slice();
 }
+
+// `transports` is stored as a Postgres array/jsonb, but a stringified JSON
+// array has been observed coming back from the DB (a scalar column holding
+// '["internal","hybrid"]' rather than a real array). WebKit rejects a bare
+// string for the sequence<DOMString> transports member outright ("Value is
+// not a sequence"), so normalize whatever shape comes back before it ever
+// reaches @simplewebauthn/browser.
+export function normalizeTransports(value: unknown): AuthenticatorTransportFuture[] | undefined {
+  if (Array.isArray(value)) return value as AuthenticatorTransportFuture[];
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed as AuthenticatorTransportFuture[];
+    } catch {
+      // Not JSON — treat as unusable rather than passing a raw string through.
+    }
+  }
+  return undefined;
+}
