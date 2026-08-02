@@ -11,7 +11,7 @@ import type {
   PublicKeyCredentialCreationOptionsJSON,
 } from '@simplewebauthn/browser';
 
-type Status = 'idle' | 'loading' | 'pin' | 'success' | 'error';
+type Status = 'idle' | 'loading' | 'pin' | 'retry' | 'success' | 'error';
 
 async function postJSON(url: string, body: unknown) {
   const res = await fetch(url, {
@@ -28,6 +28,7 @@ export default function VerifyPage() {
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinLocked, setPinLocked] = useState(false);
   const tokenRef = useRef<string | null>(null);
+  const inFlightRef = useRef(false);
 
   async function finishWithFallback(hasPin: boolean) {
     const token = tokenRef.current;
@@ -44,39 +45,57 @@ export default function VerifyPage() {
 
   async function tryAssertion(authOptions: PublicKeyCredentialRequestOptionsJSON, hasPin: boolean) {
     const token = tokenRef.current;
+    let assertion;
     try {
-      const assertion = await startAuthentication({ optionsJSON: authOptions });
-      const data = await postJSON('/api/verify/webauthn-assertion', { token, response: assertion });
-      if (data.success) {
-        setStatus('success');
-        return;
-      }
+      assertion = await startAuthentication({ optionsJSON: authOptions });
     } catch {
-      // Cancelled, not supported on this device, or no matching credential —
-      // step down to the next available factor rather than dead-ending.
+      // Not supported on this device, no matching credential, or the
+      // customer cancelled — genuine unavailability, so step down.
+      await finishWithFallback(hasPin);
+      return;
     }
-    await finishWithFallback(hasPin);
+
+    const data = await postJSON('/api/verify/webauthn-assertion', { token, response: assertion });
+    if (data.success) {
+      setStatus('success');
+      return;
+    }
+    // The customer completed Face ID/Touch ID and the browser produced an
+    // assertion, but the server rejected it (e.g. the challenge expired
+    // waiting on the ceremony). That's not "biometrics unavailable" — silently
+    // dropping to PIN here would under-record someone who really did confirm
+    // with biometrics, so let them retry the same factor instead.
+    setStatus('retry');
   }
 
   async function tryRegistration(registrationOptions: PublicKeyCredentialCreationOptionsJSON, hasPin: boolean) {
     const token = tokenRef.current;
-    try {
-      const available = await platformAuthenticatorIsAvailable();
-      if (available) {
-        const attestation = await startRegistration({ optionsJSON: registrationOptions });
-        const data = await postJSON('/api/verify/webauthn-register', { token, response: attestation });
-        if (data.success) {
-          setStatus('success');
-          return;
-        }
-      }
-    } catch {
-      // Registration unsupported/declined — fall back below.
+    const available = await platformAuthenticatorIsAvailable().catch(() => false);
+    if (!available) {
+      await finishWithFallback(hasPin);
+      return;
     }
-    await finishWithFallback(hasPin);
+
+    let attestation;
+    try {
+      attestation = await startRegistration({ optionsJSON: registrationOptions });
+    } catch {
+      // Declined or failed client-side — genuine unavailability here too.
+      await finishWithFallback(hasPin);
+      return;
+    }
+
+    const data = await postJSON('/api/verify/webauthn-register', { token, response: attestation });
+    if (data.success) {
+      setStatus('success');
+      return;
+    }
+    setStatus('retry');
   }
 
   async function handleVerify() {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setStatus('loading');
     try {
       const params = new URLSearchParams(window.location.search);
@@ -99,6 +118,8 @@ export default function VerifyPage() {
       }
     } catch {
       setStatus('error');
+    } finally {
+      inFlightRef.current = false;
     }
   }
 
@@ -165,6 +186,17 @@ export default function VerifyPage() {
             {pinError && (
               <p style={{ color: '#F87171', marginTop: '12px', fontSize: '13px', lineHeight: 1.6 }}>{pinError}</p>
             )}
+          </div>
+        )}
+
+        {status === 'retry' && (
+          <div style={{ marginTop: '28px' }}>
+            <p style={{ color: '#9AA6BC', lineHeight: 1.6 }}>
+              We couldn&apos;t confirm that just now. Please try again.
+            </p>
+            <button onClick={handleVerify} style={{ marginTop: '16px', width: '100%', padding: '14px', background: '#4F7DF3', color: 'white', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>
+              Try Again
+            </button>
           </div>
         )}
 

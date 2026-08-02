@@ -9,6 +9,7 @@ type CallSession = {
   verificationMethod: string | null;
   customerName: string | null;
   customerEmail: string | null;
+  customerPhone: string | null;
   repId: string | null;
   createdAt: string;
 };
@@ -151,6 +152,22 @@ export default function RepDashboard() {
               >
                 Send OTP for sensitive action
               </button>
+            </div>
+          )}
+
+          {call.status === 'verified' && (
+            <div>
+              {call.customerId ? (
+                <>
+                  <h2 style={{ color: 'white', fontSize: '18px', marginBottom: '4px' }}>{call.customerName ?? 'Unnamed customer'}</h2>
+                  <p style={{ color: '#94A3B8', fontSize: '14px', marginBottom: '2px' }}>{call.customerEmail ?? 'No email on file'}</p>
+                  <p style={{ color: '#94A3B8', fontSize: '14px' }}>{call.customerPhone ?? call.phone}</p>
+                </>
+              ) : (
+                <p style={{ color: '#94A3B8', fontSize: '13px' }}>
+                  No customer record matched this session — the caller confirmed via the link, but couldn&apos;t be linked to a known profile.
+                </p>
+              )}
             </div>
           )}
 

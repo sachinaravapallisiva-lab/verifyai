@@ -10,7 +10,7 @@ export async function GET() {
 
   const { data, error } = await supabaseAdmin
     .from('verify_sessions')
-    .select('id, customer_phone, customer_id, status, verification_method, rep_id, created_at, expires_at, customers(name, email)')
+    .select('id, customer_phone, customer_id, status, verification_method, rep_id, created_at, expires_at, customers(name, email, phone)')
     .gte('created_at', since)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -38,6 +38,7 @@ export async function GET() {
       verificationMethod: data.verification_method,
       customerName: customer?.name ?? null,
       customerEmail: customer?.email ?? null,
+      customerPhone: customer?.phone ?? null,
       repId: data.rep_id,
       createdAt: data.created_at,
     },

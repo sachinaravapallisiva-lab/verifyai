@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { buildAuthenticationOptions, buildRegistrationOptions } from '@/lib/webauthn';
 
+// The default WebAuthn ceremony timeout is 60s, but a first-time platform
+// authenticator prompt can add an OS-level permission dialog on top of that.
+// Give real ceremonies enough room that they don't get invalidated mid-flight.
+const WEBAUTHN_CHALLENGE_TTL_MS = 5 * 60 * 1000;
+
 export async function POST(req: NextRequest) {
   try {
     const { token, otp } = await req.json();
@@ -64,7 +69,7 @@ export async function POST(req: NextRequest) {
         .update({
           status: 'awaiting_2fa',
           webauthn_challenge: authOptions.challenge,
-          webauthn_challenge_expires_at: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
+          webauthn_challenge_expires_at: new Date(Date.now() + WEBAUTHN_CHALLENGE_TTL_MS).toISOString(),
         })
         .eq('id', token);
       return NextResponse.json({ success: true, requiresStep: 'assertion', authOptions, hasPin });
