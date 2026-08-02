@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import {
   startAuthentication,
   startRegistration,
@@ -176,13 +177,18 @@ export default function VerifyPage() {
               Enter your PIN to confirm your identity.
             </p>
             <input
-              type="password"
+              type="text"
               inputMode="numeric"
+              name="verifyai-confirmation-value"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              spellCheck={false}
               value={pin}
               disabled={pinLocked}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
               onKeyDown={(e) => e.key === 'Enter' && submitPin()}
-              style={{ marginTop: '16px', width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #334155', background: '#141E2E', color: 'white', fontSize: '18px', textAlign: 'center', letterSpacing: '4px' }}
+              style={{ marginTop: '16px', width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #334155', background: '#141E2E', color: 'white', fontSize: '18px', textAlign: 'center', letterSpacing: '4px', WebkitTextSecurity: 'disc' } as CSSProperties}
             />
             <button
               onClick={submitPin}
