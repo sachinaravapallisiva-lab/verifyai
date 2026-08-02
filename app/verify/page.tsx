@@ -23,6 +23,16 @@ async function postJSON(url: string, body: unknown) {
   return res.json();
 }
 
+// The WebAuthn browser API can reject before we ever make a network call
+// (NotAllowedError, no matching local credential, user cancel, etc.), which
+// otherwise vanishes silently — nothing shows up in server logs. Report it
+// so the real reason is visible somewhere other than this tab's console.
+function reportClientError(token: string | null, stage: string, err: unknown) {
+  const name = err instanceof Error ? err.name : 'Unknown';
+  const message = err instanceof Error ? err.message : String(err);
+  postJSON('/api/verify/client-error', { token, stage, name, message }).catch(() => {});
+}
+
 export default function VerifyPage() {
   const [status, setStatus] = useState<Status>('idle');
   const [pin, setPin] = useState('');
@@ -30,6 +40,13 @@ export default function VerifyPage() {
   const [pinLocked, setPinLocked] = useState(false);
   const tokenRef = useRef<string | null>(null);
   const inFlightRef = useRef(false);
+
+  // TEMPORARY DEBUG — remove once the passkey-skip-to-PIN issue is diagnosed.
+  const [debugInfo, setDebugInfo] = useState<{
+    requiresStep?: string | null;
+    hasPin?: boolean;
+    webauthnError?: string;
+  }>({});
 
   async function finishWithFallback(hasPin: boolean) {
     const token = tokenRef.current;
@@ -49,9 +66,14 @@ export default function VerifyPage() {
     let assertion;
     try {
       assertion = await startAuthentication({ optionsJSON: authOptions });
-    } catch {
+    } catch (err) {
       // Not supported on this device, no matching credential, or the
       // customer cancelled — genuine unavailability, so step down.
+      reportClientError(token, 'assertion', err);
+      setDebugInfo((d) => ({
+        ...d,
+        webauthnError: `assertion: ${err instanceof Error ? `${err.name}: ${err.message}` : String(err)}`,
+      }));
       await finishWithFallback(hasPin);
       return;
     }
@@ -82,8 +104,13 @@ export default function VerifyPage() {
     let attestation;
     try {
       attestation = await startRegistration({ optionsJSON: registrationOptions });
-    } catch {
+    } catch (err) {
       // Declined or failed client-side — genuine unavailability here too.
+      reportClientError(token, 'registration', err);
+      setDebugInfo((d) => ({
+        ...d,
+        webauthnError: `registration: ${err instanceof Error ? `${err.name}: ${err.message}` : String(err)}`,
+      }));
       await finishWithFallback(hasPin);
       return;
     }
@@ -107,6 +134,7 @@ export default function VerifyPage() {
       tokenRef.current = token;
 
       const data = await postJSON('/api/verify-otp', { token, otp });
+      setDebugInfo((d) => ({ ...d, requiresStep: data.requiresStep, hasPin: data.hasPin }));
       if (!data.success) {
         setStatus('error');
         return;
@@ -232,6 +260,14 @@ export default function VerifyPage() {
             </p>
           </div>
         )}
+
+        {/* TEMPORARY DEBUG — remove once the passkey-skip-to-PIN issue is diagnosed. */}
+        <div style={{ marginTop: '32px', padding: '12px', border: '1px dashed #F59E0B', borderRadius: '8px', textAlign: 'left', fontSize: '11px', color: '#F59E0B', wordBreak: 'break-word' }}>
+          <p style={{ fontWeight: 700, marginBottom: '4px' }}>DEBUG (temporary)</p>
+          <p>requiresStep: {debugInfo.requiresStep === undefined ? '—' : String(debugInfo.requiresStep)}</p>
+          <p>hasPin: {debugInfo.hasPin === undefined ? '—' : String(debugInfo.hasPin)}</p>
+          <p>webauthn error: {debugInfo.webauthnError ?? '—'}</p>
+        </div>
       </div>
     </main>
   );

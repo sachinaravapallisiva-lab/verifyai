@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
       .update({
         status: 'awaiting_2fa',
         webauthn_challenge: registrationOptions.challenge,
-        webauthn_challenge_expires_at: new Date(Date.now() + 2 * 60 * 1000).toISOString(),
+        webauthn_challenge_expires_at: new Date(Date.now() + WEBAUTHN_CHALLENGE_TTL_MS).toISOString(),
       })
       .eq('id', token);
     return NextResponse.json({ success: true, requiresStep: 'register_or_pin', registrationOptions, hasPin });
