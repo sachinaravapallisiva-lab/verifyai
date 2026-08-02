@@ -1,6 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
 
+type CustomerDataField = { label: string; value: string };
+type CustomerData = {
+  identity?: CustomerDataField[];
+  account?: CustomerDataField[];
+  recent_activity?: CustomerDataField[];
+  service_flags?: CustomerDataField[];
+};
+
 type CallSession = {
   id: string;
   phone: string;
@@ -10,9 +18,31 @@ type CallSession = {
   customerName: string | null;
   customerEmail: string | null;
   customerPhone: string | null;
+  customerData: CustomerData | null;
   repId: string | null;
   createdAt: string;
 };
+
+const CUSTOMER_DATA_SECTIONS: { key: keyof CustomerData; title: string }[] = [
+  { key: 'identity', title: 'Identity' },
+  { key: 'account', title: 'Account' },
+  { key: 'recent_activity', title: 'Recent Activity' },
+  { key: 'service_flags', title: 'Service Flags' },
+];
+
+// Label-driven, not an explicit per-field flag — customer_data is admin-
+// populated JSONB with no schema enforcement, so masking has to hold even
+// if whoever wrote the row didn't know to flag it.
+function isMaskableLabel(label: string): boolean {
+  const l = label.toLowerCase();
+  return (l.includes('account') || l.includes('member')) && /number|no\.|#/.test(l);
+}
+
+function displayFieldValue(label: string, value: string): string {
+  if (!isMaskableLabel(label)) return value;
+  const trimmed = value.trim();
+  return trimmed.length <= 4 ? trimmed : `•••• ${trimmed.slice(-4)}`;
+}
 
 type Badge = { label: string; color: string; note: string; rank: number };
 
@@ -168,6 +198,28 @@ export default function RepDashboard() {
                   <h2 style={{ color: 'white', fontSize: '18px', marginBottom: '4px' }}>{call.customerName ?? 'Unnamed customer'}</h2>
                   <p style={{ color: '#94A3B8', fontSize: '14px', marginBottom: '2px' }}>{call.customerEmail ?? 'No email on file'}</p>
                   <p style={{ color: '#94A3B8', fontSize: '14px' }}>{call.customerPhone ?? call.phone}</p>
+
+                  {call.customerData && (
+                    <div style={{ marginTop: '16px', borderTop: '1px solid #334155', paddingTop: '16px' }}>
+                      {CUSTOMER_DATA_SECTIONS.map(({ key, title }) => {
+                        const fields = call.customerData?.[key];
+                        if (!Array.isArray(fields) || fields.length === 0) return null;
+                        return (
+                          <div key={key} style={{ marginBottom: '14px' }}>
+                            <h3 style={{ color: '#94A3B8', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
+                              {title}
+                            </h3>
+                            {fields.map((f, i) => (
+                              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '13px', padding: '4px 0', borderBottom: '1px solid #1E2D3D' }}>
+                                <span style={{ color: '#94A3B8' }}>{String(f?.label ?? '')}</span>
+                                <span style={{ color: 'white', textAlign: 'right' }}>{displayFieldValue(String(f?.label ?? ''), String(f?.value ?? ''))}</span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </>
               ) : (
                 <p style={{ color: '#94A3B8', fontSize: '13px' }}>
