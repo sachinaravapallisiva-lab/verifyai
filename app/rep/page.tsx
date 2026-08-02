@@ -19,19 +19,25 @@ type Badge = { label: string; color: string; note: string; rank: number };
 // Ranked strongest (1) to weakest evidence. `verified` sessions are split by
 // verificationMethod since biometric/PIN/tap-only carry different guarantees.
 const BADGE_TIERS: Record<string, Badge> = {
-  'verified:biometric': { label: 'Verified (biometric)', color: '#22C55E', note: 'Strongest evidence — customer confirmed with Face ID / Touch ID', rank: 1 },
-  'verified:pin': { label: 'Verified (PIN)', color: '#34D399', note: 'Customer confirmed with their PIN', rank: 2 },
-  'verified:tap': { label: 'Verified (link tap)', color: '#4ADE80', note: 'Customer tapped the SMS link only — no biometric or PIN on file for this customer', rank: 3 },
-  'manual_review:': { label: 'Manually verified', color: '#F59E0B', note: 'Rep confirmed identity manually', rank: 4 },
-  'auto_verified:': { label: 'Auto-verified (Caller ID)', color: '#818CF8', note: 'Caller ID match only — spoofable, weakest evidence. Sensitive actions still need OTP.', rank: 5 },
-  'awaiting_2fa:': { label: 'Completing verification…', color: '#38BDF8', note: 'Customer tapped the link and is confirming with biometric or PIN', rank: 6 },
-  'pending:': { label: 'Pending', color: '#94A3B8', note: 'Awaiting verification', rank: 7 },
-  'expired:': { label: 'Expired', color: '#EF4444', note: 'Session expired before verification', rank: 8 },
+  'verified:webauthn+pin': { label: 'Verified (biometric + PIN)', color: '#16A34A', note: 'Strongest evidence — customer confirmed with Face ID / Touch ID and their PIN', rank: 1 },
+  'verified:biometric': { label: 'Verified (biometric)', color: '#22C55E', note: 'Customer confirmed with Face ID / Touch ID — no PIN on file to require alongside it', rank: 2 },
+  'verified:pin': { label: 'Verified (PIN)', color: '#34D399', note: 'Customer confirmed with their PIN (biometric was unavailable or failed on their device)', rank: 3 },
+  'verified:tap': { label: 'Verified (link tap)', color: '#4ADE80', note: 'Customer tapped the SMS link only — no biometric or PIN on file for this customer', rank: 4 },
+  'manual_review:': { label: 'Manually verified', color: '#F59E0B', note: 'Rep confirmed identity manually', rank: 5 },
+  'auto_verified:': { label: 'Auto-verified (Caller ID)', color: '#818CF8', note: 'Caller ID match only — spoofable, weakest evidence. Sensitive actions still need OTP.', rank: 6 },
+  'awaiting_2fa:biometric': { label: 'In progress — biometric confirmed, PIN pending', color: '#38BDF8', note: 'Customer passed WebAuthn and still needs to enter their PIN before this session is verified', rank: 7 },
+  'awaiting_2fa:': { label: 'Completing verification…', color: '#7DD3FC', note: 'Customer tapped the link and is confirming with biometric or PIN', rank: 8 },
+  'pending:': { label: 'Pending', color: '#94A3B8', note: 'Awaiting verification', rank: 9 },
+  'pin_failed:': { label: 'PIN attempts exhausted', color: '#DC2626', note: 'Customer failed the PIN stage 3 times on this link — it is now invalid, send a new verification link', rank: 10 },
+  'expired:': { label: 'Expired', color: '#EF4444', note: 'Session expired before verification', rank: 11 },
 };
 
 function badgeFor(status: string, verificationMethod: string | null): Badge {
   if (status === 'verified') {
     return BADGE_TIERS[`verified:${verificationMethod ?? 'tap'}`] ?? BADGE_TIERS['verified:tap'];
+  }
+  if (status === 'awaiting_2fa') {
+    return BADGE_TIERS[`awaiting_2fa:${verificationMethod ?? ''}`] ?? BADGE_TIERS['awaiting_2fa:'];
   }
   return BADGE_TIERS[`${status}:`] ?? BADGE_TIERS['pending:'];
 }

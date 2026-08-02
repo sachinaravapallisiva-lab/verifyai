@@ -54,17 +54,31 @@ export async function POST(req: NextRequest) {
       .update({ counter: authenticationInfo.newCounter, last_used_at: new Date().toISOString() })
       .eq('id', passkey.id);
 
+    const { data: customer } = await supabaseAdmin
+      .from('customers')
+      .select('pin_hash')
+      .eq('id', session.customer_id)
+      .maybeSingle();
+    const requiresPin = !!customer?.pin_hash;
+
+    // A PIN on file must also pass before this session counts as verified —
+    // biometric alone isn't enough for a returning customer with both
+    // factors available. webauthn_passed records that this factor is done;
+    // status only moves to 'verified' once /api/verify/pin also succeeds.
+    // Customers with no PIN on file have nothing to chain onto, so biometric
+    // alone finalizes them, same as before.
     await supabaseAdmin
       .from('verify_sessions')
       .update({
-        status: 'verified',
+        status: requiresPin ? 'awaiting_2fa' : 'verified',
         verification_method: 'biometric',
+        webauthn_passed: true,
         webauthn_challenge: null,
         webauthn_challenge_expires_at: null,
       })
       .eq('id', token);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, requiresPin });
   } catch (error) {
     console.error('WebAuthn assertion error:', error);
     return NextResponse.json({ success: false }, { status: 500 });

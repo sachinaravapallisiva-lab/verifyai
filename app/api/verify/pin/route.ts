@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
     const { data: session } = await supabaseAdmin
       .from('verify_sessions')
-      .select('id, status, customer_id')
+      .select('id, status, customer_id, webauthn_passed, pin_attempts')
       .eq('id', token)
       .maybeSingle();
 
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     if (customer.pin_locked_until && new Date(customer.pin_locked_until) > new Date()) {
       return NextResponse.json(
-        { success: false, error: 'PIN locked', lockedUntil: customer.pin_locked_until },
+        { success: false, error: 'PIN locked', locked: true, lockedUntil: customer.pin_locked_until },
         { status: 423 }
       );
     }
@@ -39,24 +39,38 @@ export async function POST(req: NextRequest) {
     const matched = await verifyPin(String(pin).trim(), customer.pin_hash);
 
     if (!matched) {
-      const attempts = (customer.pin_failed_attempts ?? 0) + 1;
-      const locked = attempts >= PIN_MAX_ATTEMPTS;
+      // Cross-session cooldown on the customer record, independent of this
+      // token's own attempt count.
+      const customerAttempts = (customer.pin_failed_attempts ?? 0) + 1;
+      const customerLocked = customerAttempts >= PIN_MAX_ATTEMPTS;
       await supabaseAdmin
         .from('customers')
         .update({
-          pin_failed_attempts: locked ? 0 : attempts,
-          pin_locked_until: locked ? new Date(Date.now() + PIN_LOCK_MS).toISOString() : null,
+          pin_failed_attempts: customerLocked ? 0 : customerAttempts,
+          pin_locked_until: customerLocked ? new Date(Date.now() + PIN_LOCK_MS).toISOString() : null,
         })
         .eq('id', customer.id);
 
+      // Terminal per-token counter — no fallback path. Once this specific
+      // link has burned 3 PIN attempts it's dead; a rep has to issue a new
+      // verification link (and the customer redoes biometric on it) rather
+      // than getting more tries on this one.
+      const tokenAttempts = (session.pin_attempts ?? 0) + 1;
+      if (tokenAttempts >= PIN_MAX_ATTEMPTS) {
+        await supabaseAdmin
+          .from('verify_sessions')
+          .update({ status: 'pin_failed', pin_attempts: tokenAttempts })
+          .eq('id', token);
+        return NextResponse.json(
+          { success: false, error: 'PIN attempts exhausted for this link', terminal: true },
+          { status: 423 }
+        );
+      }
+
+      await supabaseAdmin.from('verify_sessions').update({ pin_attempts: tokenAttempts }).eq('id', token);
       return NextResponse.json(
-        {
-          success: false,
-          error: locked ? 'PIN locked' : 'Incorrect PIN',
-          locked,
-          attemptsRemaining: locked ? 0 : PIN_MAX_ATTEMPTS - attempts,
-        },
-        { status: locked ? 423 : 401 }
+        { success: false, error: 'Incorrect PIN', attemptsRemaining: PIN_MAX_ATTEMPTS - tokenAttempts },
+        { status: 401 }
       );
     }
 
@@ -65,9 +79,14 @@ export async function POST(req: NextRequest) {
       .update({ pin_failed_attempts: 0, pin_locked_until: null })
       .eq('id', customer.id);
 
+    // webauthn_passed distinguishes the two ways this endpoint is reached:
+    // the required second stage after a successful assertion (combined tier)
+    // vs. PIN standing in as a fallback because the assertion failed or
+    // wasn't available on this device (PIN-only tier).
+    const finalMethod = session.webauthn_passed ? 'webauthn+pin' : 'pin';
     await supabaseAdmin
       .from('verify_sessions')
-      .update({ status: 'verified', verification_method: 'pin' })
+      .update({ status: 'verified', verification_method: finalMethod })
       .eq('id', token);
 
     return NextResponse.json({ success: true });

@@ -57,7 +57,9 @@ export default function VerifyPage() {
 
     const data = await postJSON('/api/verify/webauthn-assertion', { token, response: assertion });
     if (data.success) {
-      setStatus('success');
+      // A PIN on file is a required second factor, not a fallback — no
+      // dropping to tap-only if it's subsequently entered wrong.
+      setStatus(data.requiresPin ? 'pin' : 'success');
       return;
     }
     // The customer completed Face ID/Touch ID and the browser produced an
@@ -132,9 +134,15 @@ export default function VerifyPage() {
       setStatus('success');
       return;
     }
+    if (data.terminal) {
+      // This link burned all 3 PIN attempts and is now dead — no retry, no
+      // dropping to a weaker factor. Reuse the terminal error screen.
+      setStatus('error');
+      return;
+    }
     if (data.locked) {
       setPinLocked(true);
-      setPinError('Too many incorrect attempts. Try again in 30 minutes, or ask the representative for another way to verify.');
+      setPinError('Too many incorrect attempts recently. Try again in 30 minutes.');
     } else {
       setPinError(`Incorrect PIN. ${data.attemptsRemaining ?? 0} attempt(s) remaining.`);
     }
