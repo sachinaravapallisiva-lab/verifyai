@@ -2,12 +2,6 @@
 import { useEffect, useState } from 'react';
 
 type CustomerDataField = { label: string; value: string };
-type CustomerData = {
-  identity?: CustomerDataField[];
-  account?: CustomerDataField[];
-  recent_activity?: CustomerDataField[];
-  service_flags?: CustomerDataField[];
-};
 
 type CallSession = {
   id: string;
@@ -18,17 +12,46 @@ type CallSession = {
   customerName: string | null;
   customerEmail: string | null;
   customerPhone: string | null;
-  customerData: CustomerData | null;
+  customerData: Record<string, unknown> | null;
   repId: string | null;
   createdAt: string;
 };
 
-const CUSTOMER_DATA_SECTIONS: { key: keyof CustomerData; title: string }[] = [
-  { key: 'identity', title: 'Identity' },
-  { key: 'account', title: 'Account' },
-  { key: 'recent_activity', title: 'Recent Activity' },
-  { key: 'service_flags', title: 'Service Flags' },
-];
+const CUSTOMER_DATA_SECTION_TITLES = ['Identity', 'Account', 'Recent Activity', 'Service Flags'];
+
+// customer_data is admin-populated JSONB with no schema enforcement, so the
+// section-key casing/spacing ("identity" vs "Identity", "recent_activity"
+// vs "Recent Activity") and the per-section value shape (an array of
+// {label, value} pairs, or a plain {label: value} object) both vary. Match
+// section names loosely and accept either nested shape rather than assuming
+// one.
+function normalizeKey(s: string): string {
+  return s.toLowerCase().replace(/[\s_-]+/g, '');
+}
+
+function findSection(customerData: Record<string, unknown>, title: string): unknown {
+  const target = normalizeKey(title);
+  const matchKey = Object.keys(customerData).find((k) => normalizeKey(k) === target);
+  return matchKey ? customerData[matchKey] : undefined;
+}
+
+function extractFields(sectionValue: unknown): CustomerDataField[] {
+  if (Array.isArray(sectionValue)) {
+    return sectionValue
+      .map((f) => ({
+        label: String((f as { label?: unknown })?.label ?? ''),
+        value: String((f as { value?: unknown })?.value ?? ''),
+      }))
+      .filter((f) => f.label);
+  }
+  if (sectionValue && typeof sectionValue === 'object') {
+    return Object.entries(sectionValue as Record<string, unknown>).map(([label, value]) => ({
+      label,
+      value: String(value ?? ''),
+    }));
+  }
+  return [];
+}
 
 // Label-driven, not an explicit per-field flag — customer_data is admin-
 // populated JSONB with no schema enforcement, so masking has to hold even
@@ -201,18 +224,18 @@ export default function RepDashboard() {
 
                   {call.customerData && (
                     <div style={{ marginTop: '16px', borderTop: '1px solid #334155', paddingTop: '16px' }}>
-                      {CUSTOMER_DATA_SECTIONS.map(({ key, title }) => {
-                        const fields = call.customerData?.[key];
-                        if (!Array.isArray(fields) || fields.length === 0) return null;
+                      {CUSTOMER_DATA_SECTION_TITLES.map((title) => {
+                        const fields = extractFields(findSection(call.customerData!, title));
+                        if (fields.length === 0) return null;
                         return (
-                          <div key={key} style={{ marginBottom: '14px' }}>
+                          <div key={title} style={{ marginBottom: '14px' }}>
                             <h3 style={{ color: '#94A3B8', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
                               {title}
                             </h3>
                             {fields.map((f, i) => (
                               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', fontSize: '13px', padding: '4px 0', borderBottom: '1px solid #1E2D3D' }}>
-                                <span style={{ color: '#94A3B8' }}>{String(f?.label ?? '')}</span>
-                                <span style={{ color: 'white', textAlign: 'right' }}>{displayFieldValue(String(f?.label ?? ''), String(f?.value ?? ''))}</span>
+                                <span style={{ color: '#94A3B8' }}>{f.label}</span>
+                                <span style={{ color: 'white', textAlign: 'right' }}>{displayFieldValue(f.label, f.value)}</span>
                               </div>
                             ))}
                           </div>
