@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { getSession } from '@/lib/session';
 
 // Rep submits the last-4 SSN the caller provided over the phone. The real
 // value never reaches the browser — only a boolean match result does.
 export async function POST(req: NextRequest) {
   try {
-    const { sessionId, customerId, last4, repId } = await req.json();
+    const session = await getSession();
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { sessionId, customerId, last4 } = await req.json();
     if (!sessionId || !customerId || !last4) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }
@@ -21,7 +27,7 @@ export async function POST(req: NextRequest) {
     if (matched) {
       await supabaseAdmin
         .from('verify_sessions')
-        .update({ status: 'manual_review', rep_id: repId ?? null })
+        .update({ status: 'manual_review', rep_id: session.repId })
         .eq('id', sessionId);
     }
 

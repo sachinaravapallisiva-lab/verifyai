@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { getSession } from '@/lib/session';
 
 const ACTIVE_WINDOW_MS = 90 * 1000;
 
 // Polled by the rep dashboard to detect a just-arrived call and reflect its
 // verification state live, without needing websockets.
 export async function GET() {
+  const session = await getSession();
+  if (!session) {
+    return NextResponse.json({ active: false }, { status: 401 });
+  }
+
   const since = new Date(Date.now() - ACTIVE_WINDOW_MS).toISOString();
 
   const { data, error } = await supabaseAdmin
