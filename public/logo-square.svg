@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+  <rect width="400" height="400" fill="#0D1B2A" rx="40"/>
+  <g transform="translate(200, 170)">
+    <!-- Shield shape -->
+    <path d="M0,-90 L75,-55 L75,20 Q75,80 0,110 Q-75,80 -75,20 L-75,-55 Z" fill="#3B82F6" opacity="0.9"/>
+    <!-- Lock body -->
+    <rect x="-28" y="-10" width="56" height="45" rx="6" fill="white"/>
+    <!-- Lock shackle -->
+    <path d="M-18,-10 L-18,-30 Q-18,-55 0,-55 Q18,-55 18,-30 L18,-10" fill="none" stroke="white" stroke-width="10" stroke-linecap="round"/>
+    <!-- Keyhole -->
+    <circle cx="0" cy="15" r="9" fill="#3B82F6"/>
+    <rect x="-5" y="15" width="10" height="14" rx="2" fill="#3B82F6"/>
+  </g>
+  <!-- VerifyAI text -->
+  <text x="200" y="310" font-family="Arial, sans-serif" font-size="52" font-weight="800" fill="white" text-anchor="middle">VerifyAI</text>
+  <text x="200" y="350" font-family="Arial, sans-serif" font-size="20" fill="#3B82F6" text-anchor="middle" letter-spacing="3">VERIFY AND SERVE INSTANTLY</text>
+</svg>

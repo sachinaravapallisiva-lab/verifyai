@@ -160,6 +160,11 @@ function IconBuilding({ className = "" }: { className?: string }) {
   );
 }
 
+function Logo({ className = "" }: { className?: string }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/logo-mark.svg" alt="" className={className} />;
+}
+
 /* ---------- Shared bits ---------- */
 
 const NAV_LINKS = [
@@ -236,7 +241,7 @@ export default function HomePage() {
         <header className="relative z-10">
           <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 lg:px-8">
             <a href="#top" className="flex items-center gap-2.5">
-              <IconShield className="h-9 w-9 text-[#0066FF]" />
+              <Logo className="h-9 w-9" />
               <span className="text-lg font-bold tracking-tight">VerifyAI</span>
             </a>
             <ul className="hidden items-center gap-8 md:flex">
@@ -285,7 +290,7 @@ export default function HomePage() {
             <div className="absolute h-64 w-64 rounded-full bg-[#0066FF]/25 blur-2xl" />
             <div className="relative flex h-72 w-40 items-center justify-center rounded-[2rem] border border-white/15 bg-white/5 shadow-2xl backdrop-blur-sm sm:h-80 sm:w-44">
               <div className="absolute top-3 h-1 w-10 rounded-full bg-white/20" />
-              <IconShield className="h-20 w-20 text-[#0066FF] drop-shadow-[0_0_24px_rgba(0,102,255,0.65)]" />
+              <Logo className="h-20 w-20 drop-shadow-[0_0_24px_rgba(0,102,255,0.65)]" />
             </div>
           </div>
         </div>
@@ -501,7 +506,7 @@ export default function HomePage() {
               <div className="absolute top-3 h-1 w-10 rounded-full bg-white/20" />
               <div className="mt-6 flex h-full w-full flex-col rounded-2xl bg-slate-50 p-4">
                 <div className="flex items-center gap-2 text-[#0f172a]">
-                  <IconShield className="h-5 w-5 text-[#0066FF]" />
+                  <Logo className="h-5 w-5" />
                   <span className="text-xs font-bold">VerifyAI</span>
                 </div>
                 <p className="mt-6 text-xs font-semibold uppercase tracking-widest text-slate-400">
@@ -540,7 +545,7 @@ export default function HomePage() {
           <div className="mx-auto grid max-w-7xl gap-12 px-6 py-16 sm:grid-cols-2 lg:grid-cols-5 lg:px-8">
             <div className="sm:col-span-2 lg:col-span-2">
               <a href="#top" className="flex items-center gap-2.5">
-                <IconShield className="h-8 w-8 text-[#0066FF]" />
+                <Logo className="h-8 w-8" />
                 <span className="text-lg font-bold tracking-tight">VerifyAI</span>
               </a>
               <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">
