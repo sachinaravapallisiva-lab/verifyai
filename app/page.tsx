@@ -160,32 +160,6 @@ const NAV_LINKS = [
   { href: "#contact", label: "Contact" },
 ];
 
-const COMPLIANCE_BADGES = [
-  { label: "SOC 2", icon: IconBadgeCheck },
-  { label: "GDPR", icon: IconBadgeCheck },
-  { label: "CCPA", icon: IconBadgeCheck },
-];
-
-function ComplianceBadges({ tone = "dark" }: { tone?: "dark" | "light" }) {
-  const chip =
-    tone === "dark"
-      ? "border-white/15 bg-white/5 text-slate-200"
-      : "border-slate-200 bg-white text-slate-600";
-  return (
-    <div className="flex flex-wrap items-center gap-3">
-      {COMPLIANCE_BADGES.map(({ label, icon: Icon }) => (
-        <span
-          key={label}
-          className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium ${chip}`}
-        >
-          <Icon className="h-4 w-4 text-[#0066FF]" />
-          {label}
-        </span>
-      ))}
-    </div>
-  );
-}
-
 function PrimaryButton({
   children,
   className = "",
@@ -326,11 +300,10 @@ export default function HomePage() {
             ))}
           </ol>
 
-          <div className="mt-20 flex flex-col items-center gap-5 border-t border-white/10 pt-10 sm:flex-row sm:justify-between">
+          <div className="mt-20 flex flex-col items-center gap-5 border-t border-white/10 pt-10">
             <p className="text-sm font-medium text-slate-400">
               Built to meet the compliance bar financial institutions expect.
             </p>
-            <ComplianceBadges tone="dark" />
           </div>
         </div>
       </section>
@@ -368,7 +341,7 @@ export default function HomePage() {
               {
                 icon: IconCalendar,
                 title: "Deploy in days",
-                body: "No contact-center integration project required. Most teams are live within a week.",
+                body: "No contact-center integration project required.",
               },
             ].map((card) => (
               <div
@@ -437,9 +410,6 @@ export default function HomePage() {
             ))}
           </div>
 
-          <div className="mt-16 flex justify-center border-t border-white/10 pt-10">
-            <ComplianceBadges tone="dark" />
-          </div>
         </div>
       </section>
 
@@ -493,7 +463,7 @@ export default function HomePage() {
             Ready to protect your members?
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-lg text-slate-300">
-            Talk to us about a pilot &mdash; most teams are live within a week.
+            Talk to us about a pilot.
           </p>
           <div className="mt-8 flex justify-center">
             <PrimaryButton>Request a Pilot</PrimaryButton>
@@ -511,11 +481,7 @@ export default function HomePage() {
                 Faster, silent identity verification for credit unions and banks.
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-3">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-slate-200">
-                  <IconBadgeCheck className="h-4 w-4 text-[#0066FF]" />
-                  SOC 2 Type II
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-slate-200">
+<span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-slate-200">
                   <IconLock className="h-4 w-4 text-[#0066FF]" />
                   Bank-grade security
                 </span>
