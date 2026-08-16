@@ -161,7 +161,7 @@ const NAV_LINKS = [
 ];
 
 const COMPLIANCE_BADGES = [
-  { label: "SOC 2", icon: IconBadgeCheck },
+  { label: "SOC 2 in process", icon: IconBadgeCheck },
   { label: "GDPR", icon: IconBadgeCheck },
   { label: "CCPA", icon: IconBadgeCheck },
 ];
@@ -513,7 +513,7 @@ export default function HomePage() {
               <div className="mt-6 flex flex-wrap items-center gap-3">
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-slate-200">
                   <IconBadgeCheck className="h-4 w-4 text-[#0066FF]" />
-                  SOC 2 Type II
+                  SOC 2 in process
                 </span>
                 <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-xs font-medium text-slate-200">
                   <IconLock className="h-4 w-4 text-[#0066FF]" />
