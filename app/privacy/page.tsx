@@ -9,7 +9,7 @@ export default function PrivacyPolicyPage() {
         <p>VerifyAI (&ldquo;VerifyAI,&rdquo; &ldquo;we,&rdquo; &ldquo;us&rdquo;) provides identity verification technology that businesses use during customer support calls. We confirm that a caller controls the phone number on file for their account. We do not store or warehouse sensitive personal information beyond what is required to perform that confirmation.</p>
 
         <h2 style={{ fontWeight: '600', margin: '24px 0 8px' }}>Information We Collect</h2>
-        <p>When a business uses VerifyAI to verify a caller, we process the caller&apos;s phone number, a verification status, and a timestamp. We do not collect Social Security numbers, account numbers, or other sensitive account details.</p>
+        <p>When you tap a verification link, we may process a device biometric assertion (Face ID / Touch ID via WebAuthn) and, if needed, a PIN you enter on your own phone. We still do not collect Social Security numbers, account numbers, or other sensitive account details, and we do not ask you to speak those on the call.</p>
 
         <h2 style={{ fontWeight: '600', margin: '24px 0 8px' }}>Text Messages</h2>
         <p>If you receive a one-time verification link by text message, that number is used solely to deliver that message and confirm your identity for that call. We do not use your number for marketing and do not sell it to third parties. Reply STOP to any message to opt out.</p>
