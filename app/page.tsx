@@ -146,20 +146,6 @@ function IconMicOff({ className = "" }: { className?: string }) {
   );
 }
 
-function IconBuilding({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" className={className} aria-hidden="true">
-      <path
-        d="M4 21V9.5L12 4l8 5.5V21"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinejoin="round"
-      />
-      <path d="M2.5 21h19M9 21v-6h6v6M9 12h.01M15 12h.01M12 9h.01" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function Logo({ className = "" }: { className?: string }) {
   // eslint-disable-next-line @next/next/no-img-element
   return <img src="/logo-mark.svg" alt="" className={className} />;
@@ -178,13 +164,6 @@ const COMPLIANCE_BADGES = [
   { label: "SOC 2", icon: IconBadgeCheck },
   { label: "GDPR", icon: IconBadgeCheck },
   { label: "CCPA", icon: IconBadgeCheck },
-];
-
-const TRUST_LOGOS = [
-  "Community Credit Union",
-  "Regional Bank & Trust",
-  "State Employees CU",
-  "First National Bank",
 ];
 
 function ComplianceBadges({ tone = "dark" }: { tone?: "dark" | "light" }) {
@@ -291,26 +270,6 @@ export default function HomePage() {
             <div className="relative flex h-72 w-40 items-center justify-center rounded-[2rem] border border-white/15 bg-white/5 shadow-2xl backdrop-blur-sm sm:h-80 sm:w-44">
               <div className="absolute top-3 h-1 w-10 rounded-full bg-white/20" />
               <Logo className="h-20 w-20 drop-shadow-[0_0_24px_rgba(0,102,255,0.65)]" />
-            </div>
-          </div>
-        </div>
-
-        {/* Trust logos */}
-        <div className="relative z-10 border-t border-white/10 bg-black/10">
-          <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8">
-            <p className="mb-5 text-center text-xs font-semibold uppercase tracking-widest text-slate-400">
-              Trusted by forward-thinking institutions
-            </p>
-            <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
-              {TRUST_LOGOS.map((name) => (
-                <div
-                  key={name}
-                  className="flex items-center justify-center gap-2 text-slate-400 opacity-70 grayscale transition hover:opacity-100"
-                >
-                  <IconBuilding className="h-5 w-5 shrink-0" />
-                  <span className="text-sm font-medium">{name}</span>
-                </div>
-              ))}
             </div>
           </div>
         </div>
