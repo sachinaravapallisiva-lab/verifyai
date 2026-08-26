@@ -43,13 +43,6 @@ export default function VerifyPage() {
   const tokenRef = useRef<string | null>(null);
   const inFlightRef = useRef(false);
 
-  // TEMPORARY DEBUG — remove once the passkey-skip-to-PIN issue is diagnosed.
-  const [debugInfo, setDebugInfo] = useState<{
-    requiresStep?: string | null;
-    hasPin?: boolean;
-    webauthnError?: string;
-  }>({});
-
   async function finishWithFallback(hasPin: boolean) {
     const token = tokenRef.current;
     if (!token) return setStatus('error');
@@ -59,7 +52,13 @@ export default function VerifyPage() {
       return;
     }
 
-    const data = await postJSON('/api/verify/tap-fallback', { token });
+    if (!acceptedTerms) {
+      setTermsError('Agree to the Terms before you continue.');
+      setStatus('idle');
+      return;
+    }
+
+    const data = await postJSON('/api/verify/tap-fallback', { token, acceptedTerms });
     setStatus(data.success ? 'success' : 'error');
   }
 
@@ -72,10 +71,6 @@ export default function VerifyPage() {
       // Not supported on this device, no matching credential, or the
       // customer cancelled — genuine unavailability, so step down.
       reportClientError(token, 'assertion', err);
-      setDebugInfo((d) => ({
-        ...d,
-        webauthnError: `assertion: ${err instanceof Error ? `${err.name}: ${err.message}` : String(err)}`,
-      }));
       await finishWithFallback(hasPin);
       return;
     }
@@ -83,7 +78,7 @@ export default function VerifyPage() {
     const data = await postJSON('/api/verify/webauthn-assertion', {
       token,
       response: assertion,
-      acceptedTerms: true,
+      acceptedTerms,
     });
     if (data.success) {
       // A PIN on file is a required second factor, not a fallback — no
@@ -113,10 +108,6 @@ export default function VerifyPage() {
     } catch (err) {
       // Declined or failed client-side — genuine unavailability here too.
       reportClientError(token, 'registration', err);
-      setDebugInfo((d) => ({
-        ...d,
-        webauthnError: `registration: ${err instanceof Error ? `${err.name}: ${err.message}` : String(err)}`,
-      }));
       await finishWithFallback(hasPin);
       return;
     }
@@ -124,7 +115,7 @@ export default function VerifyPage() {
     const data = await postJSON('/api/verify/webauthn-register', {
       token,
       response: attestation,
-      acceptedTerms: true,
+      acceptedTerms,
     });
     if (data.success) {
       setStatus('success');
@@ -149,7 +140,6 @@ export default function VerifyPage() {
       tokenRef.current = token;
 
       const data = await postJSON('/api/verify-otp', { token, otp });
-      setDebugInfo((d) => ({ ...d, requiresStep: data.requiresStep, hasPin: data.hasPin }));
       if (!data.success) {
         setStatus('error');
         return;
@@ -178,7 +168,7 @@ export default function VerifyPage() {
     if (!token || !pin) return;
     setTermsError('');
     setPinError(null);
-    const data = await postJSON('/api/verify/pin', { token, pin, acceptedTerms: true });
+    const data = await postJSON('/api/verify/pin', { token, pin, acceptedTerms });
     if (data.success) {
       setStatus('success');
       return;
@@ -339,14 +329,6 @@ export default function VerifyPage() {
             </p>
           </div>
         )}
-
-        {/* TEMPORARY DEBUG — remove once the passkey-skip-to-PIN issue is diagnosed. */}
-        <div style={{ marginTop: '32px', padding: '12px', border: '1px dashed #F59E0B', borderRadius: '8px', textAlign: 'left', fontSize: '11px', color: '#F59E0B', wordBreak: 'break-word' }}>
-          <p style={{ fontWeight: 700, marginBottom: '4px' }}>DEBUG (temporary)</p>
-          <p>requiresStep: {debugInfo.requiresStep === undefined ? '—' : String(debugInfo.requiresStep)}</p>
-          <p>hasPin: {debugInfo.hasPin === undefined ? '—' : String(debugInfo.hasPin)}</p>
-          <p>webauthn error: {debugInfo.webauthnError ?? '—'}</p>
-        </div>
       </div>
     </main>
   );
