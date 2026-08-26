@@ -6,7 +6,13 @@ import { supabaseAdmin } from '@/lib/supabase';
 // weakest verified tier so the rep dashboard can show it distinctly.
 export async function POST(req: NextRequest) {
   try {
-    const { token } = await req.json();
+    const { token, acceptedTerms } = await req.json();
+    if (acceptedTerms !== true) {
+      return NextResponse.json(
+        { success: false, error: 'Agree to the Terms before you continue.' },
+        { status: 400 },
+      );
+    }
     if (!token) {
       return NextResponse.json({ success: false, error: 'Missing token' }, { status: 400 });
     }

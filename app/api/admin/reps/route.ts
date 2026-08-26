@@ -33,7 +33,13 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { email, password, name, role } = await req.json();
+    const { email, password, name, role, acceptedTerms } = await req.json();
+    if (acceptedTerms !== true) {
+      return NextResponse.json(
+        { error: 'Agree to the Terms of Service before you create this account.' },
+        { status: 400 },
+      );
+    }
     if (!email || !password || !name || !role) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
     }

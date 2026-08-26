@@ -4,7 +4,13 @@ import { PIN_LOCK_MS, PIN_MAX_ATTEMPTS, verifyPin } from '@/lib/pin';
 
 export async function POST(req: NextRequest) {
   try {
-    const { token, pin } = await req.json();
+    const { token, pin, acceptedTerms } = await req.json();
+    if (acceptedTerms !== true) {
+      return NextResponse.json(
+        { success: false, error: 'Agree to the Terms before you continue.' },
+        { status: 400 },
+      );
+    }
     if (!token || !pin) {
       return NextResponse.json({ success: false, error: 'Missing token or pin' }, { status: 400 });
     }

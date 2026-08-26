@@ -38,6 +38,7 @@ export default function AdminDashboardClient() {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<'rep' | 'admin'>('rep');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -64,12 +65,16 @@ export default function AdminDashboardClient() {
 
   const createRep = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptedTerms) {
+      setFormError('Agree to the Terms of Service before you create this account.');
+      return;
+    }
     setCreating(true);
     setFormError('');
     const res = await fetch('/api/admin/reps', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name, role }),
+      body: JSON.stringify({ email, password, name, role, acceptedTerms: true }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -81,6 +86,7 @@ export default function AdminDashboardClient() {
     setPassword('');
     setName('');
     setRole('rep');
+    setAcceptedTerms(false);
     setCreating(false);
     await loadReps();
   };
@@ -143,11 +149,37 @@ export default function AdminDashboardClient() {
               <option value="admin">Admin</option>
             </select>
           </div>
+          <div style={{ marginBottom: '16px' }}>
+            <label style={{ ...labelStyle, display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', marginBottom: 0 }}>
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                required
+                style={{ marginTop: '2px' }}
+              />
+              <span>
+                I agree to the{' '}
+                <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#4F7DF3', textDecoration: 'underline' }}>
+                  Terms
+                </a>
+              </span>
+            </label>
+          </div>
           {formError && <p style={{ color: '#EF4444', fontSize: '13px', marginBottom: '12px' }}>{formError}</p>}
           <button
             type="submit"
-            disabled={creating}
-            style={{ padding: '10px 20px', width: '100%', background: '#3B82F6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+            disabled={creating || !acceptedTerms}
+            style={{
+              padding: '10px 20px',
+              width: '100%',
+              background: '#3B82F6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: creating || !acceptedTerms ? 'not-allowed' : 'pointer',
+              opacity: creating || !acceptedTerms ? 0.5 : 1,
+            }}
           >
             {creating ? 'Creating...' : 'Create rep'}
           </button>

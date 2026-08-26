@@ -12,7 +12,15 @@ export type SessionPayload = {
   name: string;
   role: Role;
   exp: number;
+  // Set only after the user agrees to the Terms. Missing on older cookies.
+  agreedAt?: string;
 };
+
+export function hasProductAccess(
+  session: SessionPayload | null,
+): session is SessionPayload & { agreedAt: string } {
+  return !!session && typeof session.agreedAt === 'string' && session.agreedAt.length > 0;
+}
 
 function sessionSecret(): string {
   const secret = process.env.SESSION_SECRET;
@@ -54,6 +62,9 @@ export function decodeSession(token: string | undefined | null): SessionPayload 
 }
 
 export async function createSession(payload: Omit<SessionPayload, 'exp'>) {
+  if (!hasProductAccess({ ...payload, exp: Date.now() + SESSION_TTL_MS })) {
+    throw new Error('Cannot create a product session without Terms agreement');
+  }
   const exp = Date.now() + SESSION_TTL_MS;
   const token = encodeSession({ ...payload, exp });
   const cookieStore = await cookies();
@@ -68,7 +79,10 @@ export async function createSession(payload: Omit<SessionPayload, 'exp'>) {
 
 export async function getSession(): Promise<SessionPayload | null> {
   const cookieStore = await cookies();
-  return decodeSession(cookieStore.get(SESSION_COOKIE)?.value);
+  const session = decodeSession(cookieStore.get(SESSION_COOKIE)?.value);
+  // Unchecked or pre-agree cookies are not a product session.
+  if (!hasProductAccess(session)) return null;
+  return session;
 }
 
 export async function destroySession() {
