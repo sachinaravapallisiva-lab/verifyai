@@ -161,7 +161,7 @@ export default function AdminDashboardClient() {
               <span>
                 I agree to the{' '}
                 <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#4F7DF3', textDecoration: 'underline' }}>
-                  Terms of Service
+                  Terms
                 </a>
               </span>
             </label>

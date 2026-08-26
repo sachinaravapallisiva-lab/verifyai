@@ -38,6 +38,8 @@ export default function VerifyPage() {
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState<string | null>(null);
   const [pinLocked, setPinLocked] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [termsError, setTermsError] = useState('');
   const tokenRef = useRef<string | null>(null);
   const inFlightRef = useRef(false);
 
@@ -78,7 +80,11 @@ export default function VerifyPage() {
       return;
     }
 
-    const data = await postJSON('/api/verify/webauthn-assertion', { token, response: assertion });
+    const data = await postJSON('/api/verify/webauthn-assertion', {
+      token,
+      response: assertion,
+      acceptedTerms: true,
+    });
     if (data.success) {
       // A PIN on file is a required second factor, not a fallback — no
       // dropping to tap-only if it's subsequently entered wrong.
@@ -115,7 +121,11 @@ export default function VerifyPage() {
       return;
     }
 
-    const data = await postJSON('/api/verify/webauthn-register', { token, response: attestation });
+    const data = await postJSON('/api/verify/webauthn-register', {
+      token,
+      response: attestation,
+      acceptedTerms: true,
+    });
     if (data.success) {
       setStatus('success');
       return;
@@ -124,8 +134,13 @@ export default function VerifyPage() {
   }
 
   async function handleVerify() {
+    if (!acceptedTerms) {
+      setTermsError('Agree to the Terms before you continue.');
+      return;
+    }
     if (inFlightRef.current) return;
     inFlightRef.current = true;
+    setTermsError('');
     setStatus('loading');
     try {
       const params = new URLSearchParams(window.location.search);
@@ -156,9 +171,14 @@ export default function VerifyPage() {
 
   async function submitPin() {
     const token = tokenRef.current;
+    if (!acceptedTerms) {
+      setTermsError('Agree to the Terms before you continue.');
+      return;
+    }
     if (!token || !pin) return;
+    setTermsError('');
     setPinError(null);
-    const data = await postJSON('/api/verify/pin', { token, pin });
+    const data = await postJSON('/api/verify/pin', { token, pin, acceptedTerms: true });
     if (data.success) {
       setStatus('success');
       return;
@@ -178,6 +198,27 @@ export default function VerifyPage() {
     setPin('');
   }
 
+  const termsCheckbox = (
+    <label style={{ marginTop: '20px', display: 'flex', alignItems: 'flex-start', gap: '8px', textAlign: 'left', color: '#9AA6BC', fontSize: '13px', cursor: 'pointer' }}>
+      <input
+        type="checkbox"
+        checked={acceptedTerms}
+        onChange={(e) => {
+          setAcceptedTerms(e.target.checked);
+          if (e.target.checked) setTermsError('');
+        }}
+        required
+        style={{ marginTop: '2px' }}
+      />
+      <span>
+        I agree to the{' '}
+        <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#4F7DF3', textDecoration: 'underline' }}>
+          Terms
+        </a>
+      </span>
+    </label>
+  );
+
   return (
     <main style={{ minHeight: '100vh', background: '#0B1220', color: '#E5EAF3', fontFamily: 'system-ui, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
       <div style={{ maxWidth: '400px', width: '100%', textAlign: 'center' }}>
@@ -189,7 +230,25 @@ export default function VerifyPage() {
             <p style={{ color: '#9AA6BC', marginTop: '16px', lineHeight: 1.6 }}>
               A representative needs to confirm it&apos;s you to continue your call. Tap below to securely confirm your identity.
             </p>
-            <button onClick={handleVerify} style={{ marginTop: '28px', width: '100%', padding: '14px', background: '#4F7DF3', color: 'white', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>
+            {termsCheckbox}
+            {termsError && <p style={{ color: '#F87171', marginTop: '12px', fontSize: '13px' }}>{termsError}</p>}
+            <button
+              onClick={handleVerify}
+              disabled={!acceptedTerms}
+              style={{
+                marginTop: '28px',
+                width: '100%',
+                padding: '14px',
+                background: '#4F7DF3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '16px',
+                fontWeight: 600,
+                cursor: acceptedTerms ? 'pointer' : 'not-allowed',
+                opacity: acceptedTerms ? 1 : 0.5,
+              }}
+            >
               Confirm My Identity
             </button>
           </>
@@ -218,10 +277,12 @@ export default function VerifyPage() {
               onKeyDown={(e) => e.key === 'Enter' && submitPin()}
               style={{ marginTop: '16px', width: '100%', padding: '14px', borderRadius: '10px', border: '1px solid #334155', background: '#141E2E', color: 'white', fontSize: '18px', textAlign: 'center', letterSpacing: '4px', WebkitTextSecurity: 'disc' } as CSSProperties}
             />
+            {termsCheckbox}
+            {termsError && <p style={{ color: '#F87171', marginTop: '12px', fontSize: '13px' }}>{termsError}</p>}
             <button
               onClick={submitPin}
-              disabled={pinLocked || !pin}
-              style={{ marginTop: '16px', width: '100%', padding: '14px', background: pinLocked ? '#334155' : '#4F7DF3', color: 'white', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: 600, cursor: pinLocked ? 'not-allowed' : 'pointer' }}
+              disabled={pinLocked || !pin || !acceptedTerms}
+              style={{ marginTop: '16px', width: '100%', padding: '14px', background: pinLocked || !acceptedTerms ? '#334155' : '#4F7DF3', color: 'white', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: 600, cursor: pinLocked || !acceptedTerms ? 'not-allowed' : 'pointer' }}
             >
               Confirm
             </button>
@@ -236,7 +297,25 @@ export default function VerifyPage() {
             <p style={{ color: '#9AA6BC', lineHeight: 1.6 }}>
               We couldn&apos;t confirm that just now. Please try again.
             </p>
-            <button onClick={handleVerify} style={{ marginTop: '16px', width: '100%', padding: '14px', background: '#4F7DF3', color: 'white', border: 'none', borderRadius: '10px', fontSize: '16px', fontWeight: 600, cursor: 'pointer' }}>
+            {termsCheckbox}
+            {termsError && <p style={{ color: '#F87171', marginTop: '12px', fontSize: '13px' }}>{termsError}</p>}
+            <button
+              onClick={handleVerify}
+              disabled={!acceptedTerms}
+              style={{
+                marginTop: '16px',
+                width: '100%',
+                padding: '14px',
+                background: '#4F7DF3',
+                color: 'white',
+                border: 'none',
+                borderRadius: '10px',
+                fontSize: '16px',
+                fontWeight: 600,
+                cursor: acceptedTerms ? 'pointer' : 'not-allowed',
+                opacity: acceptedTerms ? 1 : 0.5,
+              }}
+            >
               Try Again
             </button>
           </div>

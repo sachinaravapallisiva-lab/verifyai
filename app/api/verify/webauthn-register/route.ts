@@ -5,10 +5,17 @@ import type { RegistrationResponseJSON } from '@simplewebauthn/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const { token, response } = (await req.json()) as {
+    const { token, response, acceptedTerms } = (await req.json()) as {
       token?: string;
       response?: RegistrationResponseJSON;
+      acceptedTerms?: unknown;
     };
+    if (acceptedTerms !== true) {
+      return NextResponse.json(
+        { success: false, error: 'Agree to the Terms before you continue.' },
+        { status: 400 },
+      );
+    }
     if (!token || !response) {
       return NextResponse.json({ success: false, error: 'Missing token or response' }, { status: 400 });
     }
