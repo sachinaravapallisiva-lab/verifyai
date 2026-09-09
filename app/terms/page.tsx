@@ -84,7 +84,7 @@ export default function TermsPage() {
         <h2 style={{ fontWeight: '600', margin: '24px 0 8px' }}>Contact Us</h2>
         <p>
           Questions can be sent to{' '}
-          <a href="mailto:contact@verifyai.llc" style={{ color: '#2563EB' }}>contact@verifyai.llc</a>.
+          <a href="mailto:sachin.aravapalli.siva@gmail.com" style={{ color: '#2563EB' }}>sachin.aravapalli.siva@gmail.com</a>.
         </p>
       </div>
     </main>

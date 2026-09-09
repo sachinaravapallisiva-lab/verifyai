@@ -169,7 +169,7 @@ function PrimaryButton({
 }) {
   return (
     <a
-      href="mailto:contact@verifyai.llc?subject=Request%20a%20Pilot"
+      href="mailto:sachin.aravapalli.siva@gmail.com?subject=Request%20a%20Pilot"
       className={`inline-flex items-center justify-center rounded-lg bg-[#0066FF] px-6 py-3.5 text-base font-semibold text-white shadow-lg shadow-[#0066FF]/25 transition hover:bg-[#0052cc] ${className}`}
     >
       {children}
@@ -519,8 +519,8 @@ export default function HomePage() {
             <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-slate-400 sm:flex-row lg:px-8">
               <p>&copy; 2026 VerifyAI &middot; Indianapolis, IN</p>
               <div className="flex flex-col items-center gap-1 sm:flex-row sm:gap-4">
-                <a href="mailto:contact@verifyai.llc" className="transition hover:text-white">
-                  contact@verifyai.llc
+                <a href="mailto:sachin.aravapalli.siva@gmail.com" className="transition hover:text-white">
+                  sachin.aravapalli.siva@gmail.com
                 </a>
                 <span className="hidden sm:inline">&middot;</span>
                 <a href="tel:+18333509518" className="transition hover:text-white">
